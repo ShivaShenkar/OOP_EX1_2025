@@ -93,7 +93,7 @@ public class GameLogic implements PlayableLogic {
     private ArrayList<Position> checkForValidMoves(ArrayList<Move> currentGameStatus, Player player) {
         for(int row=1;row<=8;row++){
             for(int col=1;col<=8;col++){
-                if(!locate_disc())
+                if(!locate_disc()){
             }
         }
     }

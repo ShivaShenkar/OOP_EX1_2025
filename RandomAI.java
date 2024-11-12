@@ -10,6 +10,7 @@ public class RandomAI extends AIPlayer {
     public Move makeMove(PlayableLogic gameStatus) {
         List<Position> validMoves = gameStatus.ValidMoves();
         int rnd = (int) Math.floor(Math.random()*validMoves.size());
-        Move nxtMove = new Move(validMoves.get(rnd));
+        Move nextMove = new Move(validMoves.get(rnd));
+        return null;
     }
 }
