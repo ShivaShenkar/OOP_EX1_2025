@@ -8,9 +8,9 @@ public class RandomAI extends AIPlayer {
 
     @Override
     public Move makeMove(PlayableLogic gameStatus) {
+        GameLogic gameLogic= new GameLogic();
         List<Position> validMoves = gameStatus.ValidMoves();
         int rnd = (int) Math.floor(Math.random()*validMoves.size());
-        Move nextMove = new Move(validMoves.get(rnd));
-        return null;
+        return new Move(validMoves.get(rnd));
     }
 }
