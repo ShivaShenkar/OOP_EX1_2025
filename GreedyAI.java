@@ -3,8 +3,10 @@ public class GreedyAI extends AIPlayer {
         super(isPlayerOne);
     }
 
+    //TODO: Make GreedyAI
+    //Idan work on it first
     @Override
     public Move makeMove(PlayableLogic gameStatus) {
-        return null;
+
     }
 }
