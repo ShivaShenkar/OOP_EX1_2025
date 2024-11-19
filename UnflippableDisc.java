@@ -3,6 +3,9 @@ public class UnflippableDisc implements Disc {
     public UnflippableDisc(Player currentPlayer) {
         owner=currentPlayer;
     }
+    public UnflippableDisc(Disc disc){
+        owner = disc.getOwner();
+    }
 
     @Override
     public Player getOwner() {

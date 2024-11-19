@@ -4,31 +4,33 @@ import java.util.Stack;
 
 public class GameLogic implements PlayableLogic {
     final private int GAME_SIZE = 8;
-    private Stack<Move> lastMoves;
-    private ArrayList<Position> validMoves;
-
-    //changed currentGameStatus to Disc[][]
-    private Disc[][] currentGameStatus;
+    private Stack<Move> lastMoves; //stores the last moves played
+    private ArrayList<Position> validMoves; //stores all positions that the player can make
+    private Disc[][] currentGameStatus; // 2D array that shows what's going on the board
     private Player player1, player2;
 
+    private Stack<Disc[][]> gameVersions; // stores all previous versions of the game played
+
+    //initializes all properties and resets game
     public GameLogic() {
         currentGameStatus = new Disc[GAME_SIZE][GAME_SIZE];
         validMoves=new ArrayList<>();
+        gameVersions= new Stack<>();
         player1 = new HumanPlayer(true);
         player2 = new HumanPlayer(false);
         reset();
-
     }
 
 
-    //TODO: implement method
+    //method finds if a given position is a valid move and
+    // implements it if so with the appropriate disc
     @Override
     public boolean locate_disc(Position position, Disc disc) {
         for(Position vMove : validMoves){
             if(vMove.equals(position)) {
                 Move newMove = new Move(position,disc);
                 lastMoves.push(newMove);
-                //change current
+                updateGameStatus(newMove); //updates the game board if new move is successful
                 return true;
             }
         }
@@ -36,7 +38,8 @@ public class GameLogic implements PlayableLogic {
     }
 
 
-
+    //method returns Disc which is placed in given position.
+    //If there's no Disc there the method returns null
     @Override
     public Disc getDiscAtPosition(Position position) {
         if(position==null)
@@ -44,124 +47,32 @@ public class GameLogic implements PlayableLogic {
         return currentGameStatus[position.row()][position.col()];
     }
 
+    //method returns the size of the game board
     @Override
     public int getBoardSize() {
         return GAME_SIZE;
     }
 
+    //get method for validMoves
     @Override
     public List<Position> ValidMoves() {
         return validMoves;
     }
 
-    //TODO: haven't used yet
-    //Haven't finished plus there is repeating code
-    //SHAYOOOOOOOOOOM
+    //method calculates the amount of flips that will occur
+    //if a simple Disc will be positioned at a
     @Override
     public int countFlips(Position a) {
-        int counter=0,flagCounter=0;
-        Disc temp;
+        int counter=0,tempCounter=0;
         Player attacker = (isFirstPlayerTurn()) ? player1 : player2;
-        boolean flag=false;
-
-        //check for flips on top
-        for(int i=a.row()-1;i>=0;i--){
-            temp = currentGameStatus[i][a.col()];
-            //if there is no disc
-            if(temp==null)
-                break;
-            // if the disc's color is the opposite and flippable
-            else if(!temp.getOwner().equals(attacker)&&!temp.getType().equals("⭕"))
-                flagCounter++;
-
-            //if the disc has the same color, exit loop
-            else{
-                flag=true;
-                break;
-            }
+        int[][] directions = {{0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1}};
+        for(int[] arr : directions){
+           counter+=countFlipsByDirection(a,attacker,arr);
         }
-        if(flag){
-            counter+=flagCounter;
-            flagCounter=0;
-            flag=false;
-        }
+        return counter;
 
-        //Do the same for all directions:
-        //TODO: Shorten repeating code
-
-        //check for flips on bottom
-        for(int i=a.row()+1;i<GAME_SIZE;i++){
-            temp = currentGameStatus[i][a.col()];
-            //if there is no disc
-            if(temp==null)
-                break;
-                // if the disc's color is the opposite and flippable
-            else if(!temp.getOwner().equals(attacker)&&!temp.getType().equals("⭕"))
-                flagCounter++;
-
-                //if the disc has the same color, exit loop
-            else{
-                flag=true;
-                break;
-            }
-        }
-        if(flag){
-            counter+=flagCounter;
-            flagCounter=0;
-            flag=false;
-        }
-
-
-        //check for flips on left
-        for(int i=a.col()-1;i>=0;i--){
-            temp = currentGameStatus[a.row()][i];
-            //if there is no disc
-            if(temp==null)
-                break;
-                // if the disc's color is the opposite and flippable
-            else if(!temp.getOwner().equals(attacker)&&!temp.getType().equals("⭕"))
-                flagCounter++;
-
-                //if the disc has the same color, exit loop
-            else{
-                flag=true;
-                break;
-            }
-        }
-        if(flag){
-            counter+=flagCounter;
-            flagCounter=0;
-            flag=false;
-        }
-
-        //check for flips on right
-        for(int i=a.col()+1;i<GAME_SIZE;i++){
-            temp = currentGameStatus[a.row()][i];
-            //if there is no disc
-            if(temp==null)
-                break;
-                // if the disc's color is the opposite and flippable
-            else if(!temp.getOwner().equals(attacker)&&!temp.getType().equals("⭕"))
-                flagCounter++;
-
-                //if the disc has the same color, exit loop
-            else{
-                flag=true;
-                break;
-            }
-        }
-        if(flag){
-            counter+=flagCounter;
-            flagCounter=0;
-            flag=false;
-        }
-        return 0;
-
-        //check for diagonal
-
-        //
     }
-
+    //get methods for players
     @Override
     public Player getFirstPlayer() {
         return player1;
@@ -172,46 +83,47 @@ public class GameLogic implements PlayableLogic {
         return player2;
     }
 
+    //set method for players
     @Override
     public void setPlayers(Player player1, Player player2) {
         this.player1 = player1;
         this.player2 = player2;
     }
 
+    //method checks if it's the first player's turn or the second
     @Override
     public boolean isFirstPlayerTurn() {
         if(lastMoves.isEmpty())
             return true;
-        return lastMoves.peek().getDisc().getOwner().isPlayerOne;
+        return !lastMoves.peek().getDisc().getOwner().isPlayerOne;
     }
 
+    //method checks if the game is finished
     @Override
     public boolean isGameFinished() {
         return validMoves.isEmpty();
     }
 
+    //method resets the GameLogic properties and resets the board
     @Override
     public void reset() {
         lastMoves = new Stack<>();
+        gameVersions = new Stack<>();
         resetGameStatus(currentGameStatus);
-        //validMoves = checkForValidMoves(currentGameStatus, player1);
+        validMoves = checkForValidMoves();
     }
 
+    //method undoes the last move and shows the board as of the last move wasn't played
     @Override
     public void undoLastMove() {
         if (!lastMoves.isEmpty()) {
             lastMoves.pop();
-            System.out.println();
-        } else {
-            System.out.println();
+            currentGameStatus = gameVersions.pop();
+            validMoves = checkForValidMoves();
         }
     }
 
-
-    private void clear(Stack<Move> lastMoves) {
-        while(!lastMoves.isEmpty())
-            lastMoves.pop();
-    }
+    //method clear the game board from discs
     private void clear(Disc[][] board) {
         for(int i=0;i<board.length;i++){
             for(int j=0;j<board[0].length;j++){
@@ -219,129 +131,170 @@ public class GameLogic implements PlayableLogic {
             }
         }
     }
-    //Method resets the game status
+
+    //Method resets the game board by implementing the starting discs
     private void resetGameStatus(Disc[][] gameStatus) {
         clear(gameStatus);
         gameStatus[3][3] = new SimpleDisc(player1);
         gameStatus[4][4] = new SimpleDisc(player1);
         gameStatus[3][4] = new SimpleDisc(player2);
         gameStatus[4][3] = new SimpleDisc(player2);
+
+    }
+
+    //Method finds the valid moves of the player which it's his turn
+    private ArrayList<Position> checkForValidMoves(){
+        Position tempPos;
+        ArrayList<Position> result = new ArrayList<>();
+        for(int i =0;i<getBoardSize();i++){
+            for(int j=0;j<getBoardSize();j++){
+                tempPos = new Position(i,j);
+                if(getDiscAtPosition(tempPos)!=null)
+                    continue;
+                if(countFlips(tempPos)>0)
+                    result.add(tempPos);
+            }
+        }
+        return result;
     }
 
 
-
-    /**Tried to make function updateGameStatus which updates currentGameStatus after a move is made
-    It got complicated and I haven't finished, if you want to work on it try then (Shayom)**/
-
-
-    //I made a new method which updates the game status when a new move is played
- /**   private void updateGameStatus(Move newMove) {
-        //checks for potential flips of discs to all directions :
-
-        //checks for potential flips on the new move's row
-        checkForFlips(newMove,true);
-
-        //checks for potential flips on the new move's column
-        checkForFlips(newMove,false);
-
-    }
-    private void checkForFlips(Move move, boolean row){
+    //method flips the appropriate discs after playing a move and updates it to
+    //the board
+    private void updateGameStatus(Move move){
         Position pos = move.getPosition();
-        Player owner = move.getDisc().getOwner();
+        Disc disc = move.getDisc(),temp=null;
+        Player attacker = move.getDisc().getOwner();
+        //gameVersions stores the current board status since it's going to change
+        //I made a clone() method for Disc[][] because the builtin Java clone method doesn't work
+        gameVersions.push(clone(currentGameStatus));
+        int x,y;
+        //array stores every available direction
+        int[][] directions = {{0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1}};
+        currentGameStatus[pos.row()][pos.col()] = disc;
 
-        int start = (row) ? pos.row(): pos.col();
-        Position temp1=null,temp2=null;
-        for(int i=start+1,j=start-1;i<getBoardSize()||j>=0;i++,j--){
-            if(i<getBoardSize())
-                temp1 = (row)? new Position(i,pos.col()):new Position(pos.row(),i);
-            if(j>=0)
-                temp2 = (row)? new Position(j,pos.col()):new Position(pos.row(),j);
-            if(getDiscAtPosition(temp1)==null)
-                i=getBoardSize();
-            else if (getDiscAtPosition(temp1).getOwner().equals(owner)) {
-                flipDiscs(pos,temp1,false);
-                i=getBoardSize();
-            }
-            if(getDiscAtPosition(temp2)==null)
-                j=-1;
-            else if (getDiscAtPosition(temp2).getOwner().equals(owner)) {
-                flipDiscs(pos,temp1,false);
-                j=-1;
-            }
+        if(disc.getType().equals("💣")){
+            //loop flips surrounding discs of the bomb disc
+            flipBombDisc(pos,attacker);
+//            for(int[] arr:directions){
+//                x=pos.row()+arr[0];y=pos.col()+arr[1];
+//                if(x>-1&&x<getBoardSize()&&y>-1&&y<getBoardSize())
+//                    temp=currentGameStatus[x][y];
+//                if(temp!=null&&!temp.getType().equals("⭕"))
+//                    temp.setOwner(attacker);
+//            }
         }
-    }
-    private void flipDiscs(Position start, Position end,boolean diagonal) {
-        if(diagonal)
-            flipDiscsDiagonal(start,end);
-        if(start.col()<end.col()&&start.row()<end.row()){
+        for(int[] arr : directions){
+            //if method finds flippable discs at a certain direction
+            // it will go over that direction and flip these discs
+            if(countFlipsByDirection(pos,attacker,arr)>0) {
+                int hor = arr[0], ver = arr[1];
+                x=pos.row()+arr[0];y=pos.col()+arr[1];
+                while ((x >= 0 && x < getBoardSize()) && (y >= 0 & y < getBoardSize())) {
+                    disc = currentGameStatus[x][y];
+                    if (disc == null)
+                        break;
+                    if (!disc.getType().equals("⭕")) {
+                        disc.setOwner(attacker);
+                    }
+                    x += hor;
+                    y += ver;
+                }
+            }
 
         }
-        else if(start.col()>end.col()&&start.row()>end.row()){
-
-        }
-
-    }
-
-    //flips discs diagonally
-    private void flipDiscsDiagonal(Position start, Position end) {
-        int i = start.row(),j=start.col();
-        boolean b1=false,b2=false;
-        //top diagonal
-        if(start.row()> end.row()){
-            i--;
-            b1=i>end.row();
-            //top left diagonal
-            if(start.col()>end.col()){
-                j--;
-                b2=j>end.col();
-            }
-            //top right diagonal
-            else{
-                j++;
-                b2 = j< end.col();
-            }
-        }
-        //bottom diagonal
-        else{
-            i++;
-            b1 = i<end.row();
-            //bottom left diagonal
-            if(start.col()>end.col()){
-                j--;
-                b2=j>end.col();
-            }
-            //bottom right diagonal
-            else{
-                j++;
-                b2=j<end.col();
-            }
-        }
-        Disc flipDisc;
-        Player newOwner;
-        for(i=i,j=j;b1&&b2;i=(i> start.row())?i+1:i-1,j=(j> start.col())?j+1:j-1){
-            flipDisc=currentGameStatus[i][j];
-            newOwner = (flipDisc.getOwner().isPlayerOne) ? player2 : player1;
-            if(!flipDisc.getType().equals("⭕"))
-                flipDisc.setOwner(newOwner);
-            findB1B2(start,end,i,j,b1,b2);
-        }
+        //after updating the board, the turn is over
+        // and the program checks for valid moves for the next player
+        validMoves=checkForValidMoves();
     }
 
-    private void findB1B2(Position start, Position end, int i, int j,boolean b1,boolean b2) {
-        if(start.row()> end.row()){
-            b1=i>end.row();
-            if(start.col()>end.col())
-                b2 = j > end.col();
+    //method flips surrounding discs of a bomb disc
+    private void flipBombDisc(Position pos,Player attacker){
+        int[][] directions ={{0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1}};
+        Disc temp;
+        currentGameStatus[pos.row()][pos.col()] = new SimpleDisc(attacker);
+        for(int[] arr:directions){
+            int x=pos.row()+arr[0],y=pos.col()+arr[1];
+            if(x>-1&&x<getBoardSize()&&y>-1&&y<getBoardSize())
+                temp=currentGameStatus[x][y];
             else
-                b2 = j < end.col();
+                temp=null;
+            if(temp!=null&&!temp.getType().equals("⭕")) {
+                temp.setOwner(attacker);
+                if(temp.getType().equals("💣"))
+                    flipBombDisc(new Position(x,y),attacker);
+            }
         }
-        else{
-            b1=i<end.row();
-            if(start.col()>end.col())
-                b2 = j > end.col();
+        currentGameStatus[pos.row()][pos.col()] =new BombDisc(attacker);
+    }
+
+    //method finds the amount of flippable discs of a certain direction
+    //from a specific position
+    public int countFlipsByDirection(Position pos,Player attacker,int[] dir){
+        //method assumes that the direction is presented by an array with 2 values
+        //first value for rows and second for columns
+        if(pos==null||dir==null||dir.length!=2)
+            return 0;
+        Disc tempDisc;
+        int hor=dir[0],ver=dir[1],x=pos.row(),y=pos.col();
+        x+=hor;y+=ver;
+        int flips=0;
+        //boolean check the color of the last disc visited at the loop
+        //false means the same as of the owner, true otherwise.
+        boolean lastColor=false;
+        //loop goes at the given direction and checks for flippable discs
+        while ((x>=0&&x<getBoardSize())&&(y>=0&y<getBoardSize())){
+            tempDisc = currentGameStatus[x][y];
+            if(tempDisc==null) {
+                //if the loop faces a position at the direction which doesn't have a disc
+                //it ends the loop and checks the last disc color
+                //if the color is not the same as of the player's, the discs aren't flippable
+                if(lastColor)
+                    flips=0;
+                break;
+            }
+            else if(!tempDisc.getOwner().equals(attacker)&&!tempDisc.getType().equals("⭕")) {
+                flips++;
+                lastColor=true;
+            }
+            else if(tempDisc.getOwner().equals(attacker)) {
+                lastColor=false;
+                break;
+            }
             else
-                b2 = j < end.col();
+                lastColor=true;
+            x+=hor;y+=ver;
         }
-    }**/
+        //if loop is out of bounds it means discs are unflippable
+        if(x<0||x>=getBoardSize()||y<0||y>=getBoardSize())
+            flips=0;
+        return flips;
+    }
+    //method clones the game's board
+     private Disc[][] clone(Disc[][] gameStatus){
+        Disc[][] result = new Disc[gameStatus.length][gameStatus[0].length];
+        Disc temp;
+        for(int i=0;i<result.length;i++){
+            for(int j=0;j<result[0].length;j++){
+                temp = gameStatus[i][j];
+                if(temp!=null) {
+                    switch (temp.getType()) {
+                        case "💣":
+                            result[i][j] = new BombDisc(temp);
+                            break;
+                        case "⭕":
+                            result[i][j] = new UnflippableDisc(temp);
+                            break;
+                        case "⬤":
+                            result[i][j] = new SimpleDisc(temp);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+        }
+        return result;
+    }
 }
 

@@ -3,6 +3,9 @@ public class BombDisc implements Disc {
     public BombDisc(Player currentPlayer) {
         owner=currentPlayer;
     }
+    public BombDisc(Disc disc){
+        owner = disc.getOwner();
+    }
 
     @Override
     public Player getOwner() {

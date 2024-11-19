@@ -2,6 +2,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RandomAI extends AIPlayer {
+    Player player;
     public RandomAI(boolean isPlayerOne) {
         super(isPlayerOne);
     }

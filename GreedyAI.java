@@ -7,6 +7,6 @@ public class GreedyAI extends AIPlayer {
     //Idan work on it first
     @Override
     public Move makeMove(PlayableLogic gameStatus) {
-
+        return null;
     }
 }

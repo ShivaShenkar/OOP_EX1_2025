@@ -7,7 +7,7 @@ import java.util.List;
  * manage player turns, and check for game completion.
  * DON'T MAKE ANY CHANGES HERE!
  */
-public interface    PlayableLogic {
+public interface  PlayableLogic {
 
     /**
      * Attempt to locate a disc on the game board.
