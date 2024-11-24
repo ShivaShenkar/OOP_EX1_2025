@@ -1,6 +1,5 @@
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
+
 
 public class GameLogic implements PlayableLogic {
     final private int GAME_SIZE = 8;
@@ -9,10 +8,14 @@ public class GameLogic implements PlayableLogic {
     private Disc[][] currentGameStatus; // 2D array that shows what's going on the board
     private Player player1, player2;
 
-    private Stack<Disc[][]> gameVersions; // stores all previous versions of the game played
+    private Stack<Disc[][]> gameVersions; // stores all previous versions of the game played\
+
+    private ArrayList<Integer[]> flippableDiscs;
+
 
     //initializes all properties and resets game
     public GameLogic() {
+        flippableDiscs = new ArrayList<>();
         currentGameStatus = new Disc[GAME_SIZE][GAME_SIZE];
         validMoves=new ArrayList<>();
         gameVersions= new Stack<>();
@@ -63,14 +66,21 @@ public class GameLogic implements PlayableLogic {
     //if a simple Disc will be positioned at a
     @Override
     public int countFlips(Position a) {
-        int counter=0,tempCounter=0;
+        flippableDiscs = new ArrayList<>();
         Player attacker = (isFirstPlayerTurn()) ? player1 : player2;
         int[][] directions = {{0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1}};
         for(int[] arr : directions){
-           counter+=countFlipsByDirection(a,attacker,arr);
+            flippableDiscs.addAll(addFlipsByDirection(a, attacker, arr));
         }
-        return counter;
-
+        flippableDiscs=filterDuplicates(flippableDiscs);
+        if(!flippableDiscs.isEmpty()) {
+            System.out.println("Position: (" + a.row() + "," + a.col() + ") Set: ");
+            for(Integer[] arr : flippableDiscs){
+                System.out.print("(" + arr[0] + "," +arr[1] + ") , ");
+                System.out.println();
+            }
+        }
+        return flippableDiscs.size();
     }
     //get methods for players
     @Override
@@ -163,7 +173,7 @@ public class GameLogic implements PlayableLogic {
     //the board
     private void updateGameStatus(Move move){
         Position pos = move.getPosition();
-        Disc disc = move.getDisc(),temp=null;
+        Disc disc = move.getDisc();
         Player attacker = move.getDisc().getOwner();
         //gameVersions stores the current board status since it's going to change
         //I made a clone() method for Disc[][] because the builtin Java clone method doesn't work
@@ -172,18 +182,6 @@ public class GameLogic implements PlayableLogic {
         //array stores every available direction
         int[][] directions = {{0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1}};
         currentGameStatus[pos.row()][pos.col()] = disc;
-
-        if(disc.getType().equals("💣")){
-            //loop flips surrounding discs of the bomb disc
-            flipBombDisc(pos,attacker);
-//            for(int[] arr:directions){
-//                x=pos.row()+arr[0];y=pos.col()+arr[1];
-//                if(x>-1&&x<getBoardSize()&&y>-1&&y<getBoardSize())
-//                    temp=currentGameStatus[x][y];
-//                if(temp!=null&&!temp.getType().equals("⭕"))
-//                    temp.setOwner(attacker);
-//            }
-        }
         for(int[] arr : directions){
             //if method finds flippable discs at a certain direction
             // it will go over that direction and flip these discs
@@ -194,6 +192,9 @@ public class GameLogic implements PlayableLogic {
                     disc = currentGameStatus[x][y];
                     if (disc == null)
                         break;
+                    if(disc.getType().equals("💣")){
+                        flipBombDisc(new Position(x,y),attacker);
+                    }
                     if (!disc.getType().equals("⭕")) {
                         disc.setOwner(attacker);
                     }
@@ -230,7 +231,7 @@ public class GameLogic implements PlayableLogic {
 
     //method finds the amount of flippable discs of a certain direction
     //from a specific position
-    public int countFlipsByDirection(Position pos,Player attacker,int[] dir){
+    private int countFlipsByDirection(Position pos,Player attacker,int[] dir){
         //method assumes that the direction is presented by an array with 2 values
         //first value for rows and second for columns
         if(pos==null||dir==null||dir.length!=2)
@@ -296,5 +297,78 @@ public class GameLogic implements PlayableLogic {
         }
         return result;
     }
+    private void addBombFlips(Position pos,ArrayList<Integer[]> res){
+        int[][] directions ={{0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1}};
+        Disc start=currentGameStatus[pos.row()][pos.col()],temp;
+        for(int[] arr:directions){
+            int x=pos.row()+arr[0],y=pos.col()+arr[1];
+            if(x>-1&&x<getBoardSize()&&y>-1&&y<getBoardSize())
+                temp=currentGameStatus[x][y];
+            else
+                temp=null;
+            if(temp!=null&&temp.getOwner().equals(start.getOwner())&&!temp.getType().equals("⭕")) {
+                Integer[] tempPos = {x,y};
+                res.add(tempPos);
+                if (temp.getType().equals("💣"))
+                    addBombFlips(new Position(x,y), res);
+            }
+        }
+    }
+
+    private ArrayList<Integer[]> addFlipsByDirection(Position pos,Player attacker,int[] dir){
+        ArrayList<Integer[]> result = new ArrayList<>();
+        if(pos==null||dir==null||dir.length!=2)
+            return null;
+        if(pos.row()<0||pos.row()>GAME_SIZE||pos.col()<0||pos.col()>GAME_SIZE)
+            return null;
+
+        Disc tempDisc;
+        int hor=dir[0],ver=dir[1],x=pos.row(),y=pos.col();
+        x+=hor;y+=ver;
+        boolean lastColor=false;
+        while ((x>=0&&x<getBoardSize())&&(y>=0&y<getBoardSize())){
+            tempDisc = currentGameStatus[x][y];
+            if(tempDisc==null) {
+                if(lastColor)
+                    result = new ArrayList<>();
+                break;
+            }
+            else if(!tempDisc.getOwner().equals(attacker)&&!tempDisc.getType().equals("⭕")) {
+                Integer[] tempPos = {x,y};
+                result.add(tempPos);
+                if(tempDisc.getType().equals("💣")){
+                    addBombFlips(new Position(x,y),result);
+                }
+                lastColor=true;
+            }
+            else if(tempDisc.getOwner().equals(attacker)) {
+                lastColor=false;
+                break;
+            }
+            else
+                lastColor=true;
+            x+=hor;y+=ver;
+        }
+        if(x<0||x>=getBoardSize()||y<0||y>=getBoardSize())
+            result = new ArrayList<>();
+        return result;
+    }
+    private ArrayList<Integer[]> filterDuplicates(ArrayList<Integer[]> flippableDiscs) {
+        ArrayList<Integer[]> result = new ArrayList<>();
+        boolean flag=false;
+        for(Integer[] arr1:flippableDiscs){
+            for(Integer[] arr2:result){
+                if(arr1[0].equals(arr2[0])&&arr1[1].equals(arr2[1])){
+                    flag=true;
+                    break;
+                }
+            }
+            if(!flag)
+                result.add(arr1);
+            flag=false;
+        }
+        return result;
+    }
+
 }
 
