@@ -3,15 +3,15 @@ import java.util.Comparator;
 import java.util.List;
 
 public class GreedyAI extends AIPlayer {
-    Player player;
 
     public GreedyAI(boolean isPlayerOne) {
         super(isPlayerOne);
     }
 
-    //TODO: Make GreedyAI
-    //Idan work on it first
-    //SHAYOM
+    //this method's purpose is to choose the move that will flip the most discs for the opponent.
+    // it gets a game status and calling one of its method , count flips . it shows the amount
+    // of flips for every valid position . using the comparator the method chooses the "best" move .
+    //if there are more than one best more it chooses the most right move and so on.
     @Override
     public Move makeMove(PlayableLogic gameStatus) {
         List<Position> valids = gameStatus.ValidMoves();
