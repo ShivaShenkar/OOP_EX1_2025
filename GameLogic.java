@@ -8,7 +8,7 @@ public class GameLogic implements PlayableLogic {
     private Disc[][] currentGameStatus; // 2D array that shows what's going on the board
     private Player player1, player2;
 
-    private Stack<Disc[][]> gameVersions; // stores all previous versions of the game played\
+    private Stack<Disc[][]> gameVersions; // stores all previous versions of the game played
 
     private ArrayList<Integer[]> flippableDiscs;
 
@@ -63,7 +63,7 @@ public class GameLogic implements PlayableLogic {
     }
 
     //method calculates the amount of flips that will occur
-    //if a simple Disc will be positioned at a
+    //if a Disc will be positioned at a
     @Override
     public int countFlips(Position a) {
         flippableDiscs = new ArrayList<>();
@@ -73,13 +73,6 @@ public class GameLogic implements PlayableLogic {
             flippableDiscs.addAll(addFlipsByDirection(a, attacker, arr));
         }
         flippableDiscs=filterDuplicates(flippableDiscs);
-        if(!flippableDiscs.isEmpty()) {
-            System.out.println("Position: (" + a.row() + "," + a.col() + ") Set: ");
-            for(Integer[] arr : flippableDiscs){
-                System.out.print("(" + arr[0] + "," +arr[1] + ") , ");
-                System.out.println();
-            }
-        }
         return flippableDiscs.size();
     }
     //get methods for players
@@ -111,8 +104,18 @@ public class GameLogic implements PlayableLogic {
     //method checks if the game is finished
     @Override
     public boolean isGameFinished() {
-        return validMoves.isEmpty();
+        if(validMoves.isEmpty()){
+            int n1 = getNumOfDiscs(player1),n2 = getNumOfDiscs(player2);
+            if(n1>n2)
+                player1.addWin();
+            if(n2>n1)
+                player2.addWin();
+            return true;
+        }
+        return false;
     }
+
+
 
     //method resets the GameLogic properties and resets the board
     @Override
@@ -121,13 +124,22 @@ public class GameLogic implements PlayableLogic {
         gameVersions = new Stack<>();
         resetGameStatus(currentGameStatus);
         validMoves = checkForValidMoves();
+        player2.reset_bombs_and_unflippedable();
+        player1.reset_bombs_and_unflippedable();
     }
 
     //method undoes the last move and shows the board as of the last move wasn't played
     @Override
     public void undoLastMove() {
         if (!lastMoves.isEmpty()) {
-            lastMoves.pop();
+            Move last = lastMoves.pop();
+            Player lastPlayer = last.getDisc().getOwner();
+            if(last.getDisc().getType().equals("💣"))
+                lastPlayer.number_of_bombs++;
+            else if(last.getDisc().getType().equals("⭕"))
+                lastPlayer.number_of_unflippedable++;
+            System.out.println("Player :"+lastPlayer.toString());
+            System.out.println("Bombs: "+lastPlayer.getNumber_of_bombs()+". Unflippable: "+lastPlayer.getNumber_of_unflippedable());
             currentGameStatus = gameVersions.pop();
             validMoves = checkForValidMoves();
         }
@@ -182,6 +194,10 @@ public class GameLogic implements PlayableLogic {
         //array stores every available direction
         int[][] directions = {{0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1}};
         currentGameStatus[pos.row()][pos.col()] = disc;
+        if(disc.getType().equals("💣"))
+            attacker.reduce_bomb();
+        else if(disc.getType().equals("⭕"))
+            attacker.reduce_unflippedable();
         for(int[] arr : directions){
             //if method finds flippable discs at a certain direction
             // it will go over that direction and flip these discs
@@ -368,6 +384,18 @@ public class GameLogic implements PlayableLogic {
             flag=false;
         }
         return result;
+    }
+    private int getNumOfDiscs(Player player) {
+        int count=0;
+        for(int i=0;i<GAME_SIZE;i++){
+            for(int j=0;j<GAME_SIZE;j++){
+                if(currentGameStatus[i][j]!=null){
+                    if(currentGameStatus[i][j].getOwner().equals(player))
+                        count++;
+                }
+            }
+        }
+        return count;
     }
 
 }
