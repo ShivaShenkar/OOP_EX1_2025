@@ -32,7 +32,21 @@ public class GameLogic implements PlayableLogic {
         for(Position vMove : validMoves){
             if(vMove.equals(position)) {
                 Move newMove = new Move(position,disc);
-                lastMoves.push(newMove);
+                Disc deepCopy = null;
+                switch (disc.getType()) {
+                    case "💣":
+                        deepCopy = new BombDisc(disc);
+                        break;
+                    case "⭕":
+                        deepCopy = new UnflippableDisc(disc);
+                        break;
+                    case "⬤":
+                        deepCopy= new SimpleDisc(disc);
+                        break;
+                    default:
+                        break;
+                }
+                lastMoves.push(new Move(position,deepCopy));
                 updateGameStatus(newMove); //updates the game board if new move is successful
                 return true;
             }
@@ -73,6 +87,13 @@ public class GameLogic implements PlayableLogic {
             flippableDiscs.addAll(addFlipsByDirection(a, attacker, arr));
         }
         flippableDiscs=filterDuplicates(flippableDiscs);
+
+
+//        if(!flippableDiscs.isEmpty()) {
+//            System.out.println("Position: (" + a.row() + "," + a.col() + "), Set: ");
+//            for (Integer[] arr : flippableDiscs)
+//                System.out.println("(" + arr[0] + "," + arr[1] + ")");
+//        }
         return flippableDiscs.size();
     }
     //get methods for players
@@ -208,11 +229,13 @@ public class GameLogic implements PlayableLogic {
                     disc = currentGameStatus[x][y];
                     if (disc == null)
                         break;
-                    if(disc.getType().equals("💣")){
-                        flipBombDisc(new Position(x,y),attacker);
-                    }
-                    if (!disc.getType().equals("⭕")) {
-                        disc.setOwner(attacker);
+                    if(!disc.getOwner().equals(attacker)) {
+                        if (disc.getType().equals("💣")) {
+                            flipBombDisc(new Position(x, y), attacker);
+                        }
+                        if (!disc.getType().equals("⭕")) {
+                            disc.setOwner(attacker);
+                        }
                     }
                     x += hor;
                     y += ver;
@@ -237,9 +260,11 @@ public class GameLogic implements PlayableLogic {
             else
                 temp=null;
             if(temp!=null&&!temp.getType().equals("⭕")) {
+                if(temp.getType().equals("💣")&&!temp.getOwner().equals(attacker)) {
+                    temp.setOwner(attacker);
+                    flipBombDisc(new Position(x, y), attacker);
+                }
                 temp.setOwner(attacker);
-                if(temp.getType().equals("💣"))
-                    flipBombDisc(new Position(x,y),attacker);
             }
         }
         currentGameStatus[pos.row()][pos.col()] =new BombDisc(attacker);
@@ -313,22 +338,27 @@ public class GameLogic implements PlayableLogic {
         }
         return result;
     }
-    private void addBombFlips(Position pos,ArrayList<Integer[]> res){
+    private void addBombFlips(Integer[] pos,ArrayList<Integer[]> res){
         int[][] directions ={{0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1}};
-        Disc start=currentGameStatus[pos.row()][pos.col()],temp;
+        Disc start=currentGameStatus[pos[0]][pos[1]],temp;
+        currentGameStatus[pos[0]][pos[1]] = new SimpleDisc(start);
         for(int[] arr:directions){
-            int x=pos.row()+arr[0],y=pos.col()+arr[1];
+            int x=pos[0]+arr[0],y=pos[1]+arr[1];
             if(x>-1&&x<getBoardSize()&&y>-1&&y<getBoardSize())
                 temp=currentGameStatus[x][y];
             else
                 temp=null;
             if(temp!=null&&temp.getOwner().equals(start.getOwner())&&!temp.getType().equals("⭕")) {
                 Integer[] tempPos = {x,y};
-                res.add(tempPos);
-                if (temp.getType().equals("💣"))
-                    addBombFlips(new Position(x,y), res);
+                if(temp.getType().equals("💣")) {
+                    res.add(tempPos);
+                    addBombFlips(tempPos, res);
+                }
+                else
+                    res.add(tempPos);
             }
         }
+        currentGameStatus[pos[0]][pos[1]] = new BombDisc(start);
     }
 
     private ArrayList<Integer[]> addFlipsByDirection(Position pos,Player attacker,int[] dir){
@@ -353,7 +383,7 @@ public class GameLogic implements PlayableLogic {
                 Integer[] tempPos = {x,y};
                 result.add(tempPos);
                 if(tempDisc.getType().equals("💣")){
-                    addBombFlips(new Position(x,y),result);
+                    addBombFlips(tempPos,result);
                 }
                 lastColor=true;
             }

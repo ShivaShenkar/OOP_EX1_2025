@@ -6,9 +6,9 @@ public class Move {
         this.position = position;
         this.disc = disc;
     }
-    public Move(Position position){
-        this.position=position;
-    }
+//    public Move(Position position){
+//        this.position=position;
+//    }
 
     public Position getPosition() {
         return position;
