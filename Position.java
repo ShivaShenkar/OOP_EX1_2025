@@ -1,3 +1,4 @@
+//class represents a position in the game board
 public class Position {
     private int row;
     private int col;
@@ -18,5 +19,10 @@ public class Position {
 
     public boolean equals(Position position) {
         return this.row==position.row() && this.col== position.col();
+    }
+
+    @Override
+    public String toString() {
+        return "("+row+","+col+")";
     }
 }

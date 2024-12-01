@@ -8,10 +8,14 @@ public class GreedyAI extends AIPlayer {
         super(isPlayerOne);
     }
 
-    //this method's purpose is to choose the move that will flip the most discs for the opponent.
-    // it gets a game status and calling one of its method , count flips . it shows the amount
-    // of flips for every valid position . using the comparator the method chooses the "best" move .
-    //if there are more than one best more it chooses the most right move and so on.
+    /**
+     * this method's purpose is to choose the move that will flip the most discs for the opponent.
+     *it gets a game status and calling one of its method , count flips . it shows the amount
+     *of flips for every valid position . using the comparator the method chooses the "best" move .
+     *if there are more than one best more it chooses the most right move and so on.
+     * @param gameStatus represent the current status of the game
+     * @return GreedyAI's move
+     * */
     @Override
     public Move makeMove(PlayableLogic gameStatus) {
         List<Position> valids = gameStatus.ValidMoves();

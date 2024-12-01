@@ -8,11 +8,15 @@ public class RandomAI extends AIPlayer {
         super(isPlayerOne);
     }
 
-    //this method is responsible for the random AI's move choosing algorithm. it receives
-    // the current game status for each player . choosing a random move out of the random moves
-    // and also choosing a random disc type depending on their quantity (at some point the bomb discs
-    // and the unflappable discs are not available. )
-    //the method returns the move is a disc type.
+    /**
+     * this method is responsible for the random AI's move choosing algorithm. it receives
+     * the current game status for each player . choosing a random move out of the random moves
+     * and also choosing a random disc type depending on their quantity (at some point the bomb discs
+     * and the unflappable discs are not available.)
+     * the method returns the move is a disc type.
+     * @param gameStatus represent the current status of the game
+     * @return RandomAI's move
+     *     */
     @Override
     public Move makeMove(PlayableLogic gameStatus) {
         List<Position> validMoves = gameStatus.ValidMoves();
@@ -34,9 +38,13 @@ public class RandomAI extends AIPlayer {
         return new Move(move, disc);
     }
 
-    // this is a private method that helps to choose a random disc type according to the game rules.
-    //after a random number is chosen (that represent a disc type) , the method checks if the disc type
-    // is available and then returns it . else it will choose a different disc.
+    /**
+     * this is a private method that helps to choose a random disc type according to the game rules.
+     * after a random number is chosen (that represent a disc type) , the method checks if the disc type
+     * is available and then returns it . else it will choose a different disc.
+     * @param player the AI player
+     * @param discs represent the discs available to the AI
+     * @return the disc type the AI is going to play*/
     private Disc chooseDisc(Player player, ArrayList<Integer> discs) {
         while (true) {
             int rand = (int) (Math.random() * discs.size());
